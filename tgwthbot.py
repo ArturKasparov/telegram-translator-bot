@@ -1,12 +1,13 @@
+import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils import executor
+from aiogram.filters import Command
 from googletrans import Translator
 
-TOKEN = "7941812938:AAEYprdhc5FnOLzf4qxbT7r41VvQZcp0N4o"  # token
+TOKEN = "7941812938:AAEYprdhc5FnOLzf4qxbT7r41VvQZcp0N4o"
 bot = Bot(token=TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()  # В aiogram 3.x Dispatcher создаётся без аргументов
 translator = Translator()
 
 # keyboard for choosing preferred languagegi
@@ -16,14 +17,15 @@ languages = {
     "Немецкий 🇩🇪": "de",
     "Французский 🇫🇷": "fr"
 }
-keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-for lang in languages.keys():
-    keyboard.add(KeyboardButton(lang))
+keyboard = ReplyKeyboardMarkup(
+    keyboard=[[KeyboardButton(text=lang)] for lang in languages.keys()],
+    resize_keyboard=True
+)
 
 # we store every language used for a translation
 user_lang = {}
 
-@dp.message_handler(commands=['start'])
+@dp.message(Command("start"))
 async def start(message: types.Message):
     user_lang[message.from_user.id] = "en"  # english by default
     await message.answer(
@@ -31,17 +33,21 @@ async def start(message: types.Message):
         reply_markup=keyboard
     )
 
-@dp.message_handler(lambda message: message.text in languages.keys())
+@dp.message(lambda message: message.text in languages.keys())
 async def set_language(message: types.Message):
     user_lang[message.from_user.id] = languages[message.text]
     await message.answer(f"Язык перевода изменен на {message.text}!")
 
-@dp.message_handler()
+@dp.message()
 async def translate_text(message: types.Message):
     lang = user_lang.get(message.from_user.id, "en")
     translation = translator.translate(message.text, dest=lang)
     await message.answer(f"Перевод ({lang}): {translation.text}")
 
-if __name__ == "__main__":
+async def main():
     logging.basicConfig(level=logging.INFO)
-    executor.start_polling(dp, skip_updates=True)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot)
+
+if __name__ == "__main__":
+    asyncio.run(main())
