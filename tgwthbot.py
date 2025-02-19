@@ -4,10 +4,11 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.filters import Command
 from googletrans import Translator
+from config import TOKEN
 
-TOKEN = "7941812938:AAEYprdhc5FnOLzf4qxbT7r41VvQZcp0N4o"
+
 bot = Bot(token=TOKEN)
-dp = Dispatcher()  # В aiogram 3.x Dispatcher создаётся без аргументов
+dp = Dispatcher()
 translator = Translator()
 
 # keyboard for choosing preferred language
