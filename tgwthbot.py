@@ -1,56 +1,24 @@
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.filters import Command
-from googletrans import Translator
+from aiogram import Dispatcher, Bot
+from app.handlers import router  # Импортируем роутер из handlers
 from config import TOKEN
 
-
-bot = Bot(token=TOKEN)
+bot = Bot(TOKEN)
 dp = Dispatcher()
-translator = Translator()
 
-# keyboard for choosing preferred language
-languages = {
-    "Английский 🇬🇧": "en",
-    "Русский 🇷🇺": "ru",
-    "Немецкий 🇩🇪": "de",
-    "Французский 🇫🇷": "fr",
-    "Українська 🇺🇦": "uk"  # Добавляем украинский язык
-}
-
-keyboard = ReplyKeyboardMarkup(
-    keyboard=[[KeyboardButton(text=lang)] for lang in languages.keys()],
-    resize_keyboard=True
-)
-
-# we store every language used for a translation
-user_lang = {}
-
-@dp.message(Command("start"))
-async def start(message: types.Message):
-    user_lang[message.from_user.id] = "en"  # english by default
-    await message.answer(
-        "Привет! Отправь мне текст, и я переведу его. Выбери язык перевода:",
-        reply_markup=keyboard
-    )
-
-@dp.message(lambda message: message.text in languages.keys())
-async def set_language(message: types.Message):
-    user_lang[message.from_user.id] = languages[message.text]
-    await message.answer(f"Язык перевода изменен на {message.text}!")
-
-@dp.message()
-async def translate_text(message: types.Message):
-    lang = user_lang.get(message.from_user.id, "en")
-    translation = translator.translate(message.text, dest=lang)
-    await message.answer(f"Перевод ({lang}): {translation.text}")
 
 async def main():
+    dp.include_router(router)  # Подключаем роутер к диспетчеру
     logging.basicConfig(level=logging.INFO)
-    await bot.delete_webhook(drop_pending_updates=True)
+
+    await bot.delete_webhook(drop_pending_updates=True)  # Удаляем возможные старые обновления
     await dp.start_polling(bot)
 
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    logging.basicConfig(level=logging.INFO)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('Exit')
